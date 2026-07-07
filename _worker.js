@@ -71,7 +71,7 @@ async function 启动传输管道(WS接口, 反代IP) {
 				const dataView = new DataView(VL数据.slice(地址信息索引, 地址信息索引 + 地址长度));
 				const ipv6 = [];
 				for (let i = 0; i < 8; i++) {
-					ipv6.push(dataView.getUint16(i * 2).toString(16));
+					ipv6.push(dataView.getUint16(i * 2).toString(16).padStart(4, '0'));
 				}
 				访问地址 = ipv6.join(':');
 				break;
@@ -84,7 +84,7 @@ async function 启动传输管道(WS接口, 反代IP) {
 			await TCP接口.opened;
 		} catch {
 			const [反代IP地址, 反代IP端口 = 访问端口] = 反代IP.split(':');
-			TCP接口 = connect({ hostname: 反代IP地址, port: 反代IP端口 });
+			TCP接口 = connect({ hostname: 反代IP地址, port: Number(反代IP端口) || 访问端口 });
 			await TCP接口.opened;
 		}
 		建立传输管道(写入初始数据);
