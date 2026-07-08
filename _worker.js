@@ -56,6 +56,7 @@ async function 启动传输管道(WS接口, 反代IP) {
 		let 地址长度 = 0;
 		let 访问地址 = '';
 		let 地址信息索引 = 提取地址索引 + 1;
+
 		switch (识别地址类型) {
 			case 1:
 				地址长度 = 4;
@@ -71,14 +72,21 @@ async function 启动传输管道(WS接口, 反代IP) {
 				const dataView = new DataView(VL数据.slice(地址信息索引, 地址信息索引 + 地址长度));
 				const ipv6 = [];
 				for (let i = 0; i < 8; i++) {
-					ipv6.push(dataView.getUint16(i * 2).toString(16).padStart(4, '0'));
+					ipv6.push(
+						dataView
+							.getUint16(i * 2)
+							.toString(16)
+							.padStart(4, '0'),
+					);
 				}
 				访问地址 = ipv6.join(':');
 				break;
 			default:
 				return;
 		}
+
 		const 写入初始数据 = VL数据.slice(地址信息索引 + 地址长度);
+
 		try {
 			TCP接口 = connect({ hostname: 访问地址, port: 访问端口 });
 			await TCP接口.opened;
@@ -87,19 +95,16 @@ async function 启动传输管道(WS接口, 反代IP) {
 			TCP接口 = connect({ hostname: 反代IP地址, port: Number(反代IP端口) || 访问端口 });
 			await TCP接口.opened;
 		}
-		建立传输管道(写入初始数据);
-	}
 
-	async function 建立传输管道(写入初始数据) {
 		传输数据 = TCP接口.writable.getWriter();
 
 		if (写入初始数据?.byteLength > 0) {
 			await 传输数据.write(写入初始数据);
 		}
 
-		await TCP接口.readable.pipeTo(
+		TCP接口.readable.pipeTo(
 			new WritableStream({
-				async write(chunk) {
+				write(chunk) {
 					WS接口.send(chunk);
 				},
 			}),
